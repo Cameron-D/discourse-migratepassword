@@ -14,6 +14,7 @@
 # for Wordpress                #{password}              phpass(8).crypt(pass)
 # for SMF                      #{username}:#{password}  sha1(user+pass)
 # for WBBlite                  #{salt}:#{hash}          sha1(salt+sha1(salt+sha1(pass)))
+# for MyBB                     #{salt}:#{hash}          md5(md5(salt) + md5(pass))
 
 gem 'bcrypt', '3.1.3'
 
@@ -113,7 +114,8 @@ after_initialize do
             AlternativePassword::check_wordpress(password, crypted_pass) ||
             AlternativePassword::check_bcrypt(password, crypted_pass) ||
             AlternativePassword::check_sha256(password, crypted_pass) ||
-            AlternativePassword::check_wbblite(password, crypted_pass) 
+            AlternativePassword::check_wbblite(password, crypted_pass) ||
+            AlternativePassword::check_mybb(password, crypted_pass) 
         end
 
         def self.check_bcrypt(password, crypted_pass)
@@ -170,6 +172,11 @@ after_initialize do
             salt, hash = crypted_pass.split(':', 2)
             sha1 = Digest::SHA1.hexdigest(salt + Digest::SHA1.hexdigest(salt + Digest::SHA1.hexdigest(password)))
             hash == sha1
+        end
+        
+        def self.check_mybb(password, crypted_pass)
+            hash, salt = crypted_pass.split(':', 2)
+            !salt.nil? && hash == Digest::MD5.hexdigest(Digest::MD5.hexdigest(salt) + Digest::MD5.hexdigest(password))
         end
     end
  
